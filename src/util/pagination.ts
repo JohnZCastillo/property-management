@@ -4,13 +4,8 @@ export default function withPagination<T extends PgSelect>(
   qb: T,
   orderByColumn: PgColumn | SQL | SQL.Aliased,
   page = 1,
-  pageSize = 3,
+  pageSize = 10,
 ) {
-
-  const count = ()=> {
-    return 0;
-  //  return qb.select({ count: sql<number>`count(*)` });
-  }
 
   const paginate = ()=> {
     return qb
@@ -19,9 +14,15 @@ export default function withPagination<T extends PgSelect>(
     .offset((page - 1) * pageSize);
   }
 
+  const count = ()=> ({
+        page: page,
+        perPage: pageSize,
+        totalPage: 1
+      })
+
   return Promise.all([
-      count(),
-      paginate()
+      paginate(),
+      count()
     ]);
    
 }

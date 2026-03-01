@@ -39,6 +39,7 @@ export const roles = pgTable('roles', {
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).unique().notNull(),
   password: varchar('password', { length: 255 }).notNull(),
   verifiedAt: timestamp('verified_at', { withTimezone: true }),
@@ -60,6 +61,7 @@ export const properties = pgTable('properties', {
 export const rooms = pgTable('rooms', {
   id: serial('id').primaryKey(),
   propertyId: integer('property_id').notNull().references(() => properties.id, { onDelete: 'cascade' }),
+  companyId: integer('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
   title: varchar('title', { length: 255 }).notNull(),
   status: roomStatus('status').default('available'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -72,6 +74,7 @@ export const customers = pgTable('customers', {
   email: varchar('email', { length: 255 }),
   contact: varchar('contact', { length: 20 }),
   age: integer('age'),
+  companyId: integer('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
@@ -104,7 +107,7 @@ export const expenses = pgTable('expenses', {
   title: varchar('title', { length: 255 }).notNull(),
   amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
   targetType: expenseTargetType('target_type'),
-  targetId: integer('target_id').notNull(),
+  targetId: integer('target_id'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 });

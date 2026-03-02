@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import "dotenv/config";
 import { sValidator } from "@hono/standard-validator";
 import { authValidation, registerValidtion } from "../validation/schema.js";
+import bcrypt from "bcryptjs";
 
 const route = new Hono();
 
@@ -53,6 +54,7 @@ route.post("/login", sValidator("json", authValidation), async (c) => {
 				id: users.id,
 				name: users.name,
 				email: users.email,
+				password: users.password,
 			},
 			company: {
 				id: companies.id,
@@ -69,11 +71,27 @@ route.post("/login", sValidator("json", authValidation), async (c) => {
 		.where(eq(users.email, data.email))
 		.limit(1);
 
-	const token = await sign(user, process.env.JWT_SECRET!);
-
 	if (user == null) {
 		throw new Error("Invalid email/Password");
 	}
+
+	const isMatch = await bcrypt.compare(data.password, user.user.password);
+
+	if (!isMatch) {
+		throw new Error("Invalid email/Password");
+	}
+
+	const token = await sign(
+		{
+			...user,
+			user: {
+				id: user.user.id,
+				name: user.user.name,
+				email: user.user.email,
+			},
+		},
+		process.env.JWT_SECRET!,
+	);
 
 	const { header, payload } = decode(token);
 

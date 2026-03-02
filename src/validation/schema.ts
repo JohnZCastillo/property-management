@@ -1,4 +1,6 @@
 import * as z from "zod";
+import bcrypt from "bcryptjs";
+import "dotenv/config";
 
 export const companyValidation = z.object({
 	name: z.string(),
@@ -88,7 +90,11 @@ export const authValidation = z.object({
 export const registerValidtion = z.object({
 	name: z.string().min(1).max(255),
 	email: z.string().email().max(255),
-	password: z.string().min(8).max(255),
+	password: z
+		.string()
+		.min(8)
+		.max(255)
+		.transform((val) => bcrypt.hash(val, parseInt(process.env.SALT_ROUNDS!))),
 	company_name: z.string().min(1).max(255),
 	company_code: z.string().min(1).max(50),
 });

@@ -3,15 +3,6 @@ import { Hono } from "hono";
 import { jwt } from "hono/jwt";
 import "dotenv/config";
 
-type Variables = {
-	jwtPayload: {
-		user: {
-			id: number;
-			name: string;
-		};
-	};
-};
-
 import AuthRoute from "./auth.js";
 import BookingRoute from "./booking.js";
 import CompanyRoute from "./company.js";
@@ -23,6 +14,8 @@ import RoleRoute from "./role.js";
 import RoomRoute from "./room.js";
 import UserRoute from "./user.js";
 import StaffRoute from "./staff.js";
+import type { Variables } from "../types/index.js";
+import superAdminMiddleware from "../middlewares/superAdminMiddleware.js";
 
 const route = new Hono<{ Variables: Variables }>();
 
@@ -34,6 +27,8 @@ route.use("/auth/*", (c, next) => {
 
 	return jwtMiddleware(c, next);
 });
+
+route.use("/auth/users/*", superAdminMiddleware);
 
 route.route("/public/auth", AuthRoute);
 

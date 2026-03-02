@@ -5,13 +5,19 @@ import "dotenv/config";
 import routes from "./routes/_index.js";
 import { UnauthorizedError } from "./exceptions/Unauthorized.js";
 import { ForbiddenError } from "./exceptions/Forbidden.js";
+import { HTTPException } from 'hono/http-exception';
 
 const app = new Hono();
 
 app.route("/api", routes);
 
 app.onError((err, c) => {
-	if (err instanceof UnauthorizedError) {
+
+	if(process.env.ENVIRONMENT === 'DEVELOPMENT'){
+		console.log(err);
+	}
+
+	if (err instanceof UnauthorizedError || err instanceof  HTTPException) {
 		return c.json({ message: err.message, status: 401 }, 401);
 	}
 
@@ -25,7 +31,7 @@ app.onError((err, c) => {
 serve(
 	{
 		fetch: app.fetch,
-		port: 3000,
+		port: parseInt(process.env.APP_PORT!),
 	},
 	(info) => {
 		console.log(`Server is running on http://localhost:${info.port}`);

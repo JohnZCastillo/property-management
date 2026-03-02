@@ -30,18 +30,18 @@ route.use("/auth/*", (c, next) => {
 });
 
 // Super Admin Middlewares
-route.use("/auth/users/*", superAdminMiddleware);
-route.use("/auth/companies/*", superAdminMiddleware);
+// route.use("/auth/users/*", superAdminMiddleware);
+// route.use("/auth/companies/*", superAdminMiddleware);
 
-// Admin Middlewares
-route.use("/auth/bookings/*", adminMiddleware);
-route.use("/auth/customers/*", adminMiddleware);
-route.use("/auth/expenses/*", adminMiddleware);
-route.use("/auth/job-orders/*", adminMiddleware);
-route.use("/auth/properties/*", adminMiddleware);
-route.use("/auth/rooms/*", adminMiddleware);
-route.use("/auth/roles/*", adminMiddleware);
-route.use("/auth/staffs/*", adminMiddleware);
+// // Admin Middlewares
+// route.use("/auth/bookings/*", adminMiddleware);
+// route.use("/auth/customers/*", adminMiddleware);
+// route.use("/auth/expenses/*", adminMiddleware);
+// route.use("/auth/job-orders/*", adminMiddleware);
+// route.use("/auth/properties/*", adminMiddleware);
+// route.use("/auth/rooms/*", adminMiddleware);
+// route.use("/auth/roles/*", adminMiddleware);
+// route.use("/auth/staffs/*", adminMiddleware);
 
 
 //  ---- Routes start here ------ 

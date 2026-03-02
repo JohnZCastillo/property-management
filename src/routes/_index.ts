@@ -16,6 +16,7 @@ import UserRoute from "./user.js";
 import StaffRoute from "./staff.js";
 import type { Variables } from "../types/index.js";
 import superAdminMiddleware from "../middlewares/superAdminMiddleware.js";
+import adminMiddleware from "../middlewares/adminMiddleware.js";
 
 const route = new Hono<{ Variables: Variables }>();
 
@@ -28,19 +29,34 @@ route.use("/auth/*", (c, next) => {
 	return jwtMiddleware(c, next);
 });
 
+// Super Admin Middlewares
 route.use("/auth/users/*", superAdminMiddleware);
+route.use("/auth/companies/*", superAdminMiddleware);
 
+// Admin Middlewares
+route.use("/auth/bookings/*", adminMiddleware);
+route.use("/auth/customers/*", adminMiddleware);
+route.use("/auth/expenses/*", adminMiddleware);
+route.use("/auth/job-orders/*", adminMiddleware);
+route.use("/auth/properties/*", adminMiddleware);
+route.use("/auth/rooms/*", adminMiddleware);
+route.use("/auth/roles/*", adminMiddleware);
+route.use("/auth/staffs/*", adminMiddleware);
+
+
+//  ---- Routes start here ------ 
 route.route("/public/auth", AuthRoute);
 
-route.route("/auth/bookings", BookingRoute);
 route.route("/auth/companies", CompanyRoute);
+route.route("/auth/users", UserRoute);
+
+route.route("/auth/bookings", BookingRoute);
 route.route("/auth/customers", CustomerRoute);
 route.route("/auth/expenses", ExpenseRoute);
 route.route("/auth/job-orders", JobOrderRoute);
 route.route("/auth/properties", PropertyRoute);
 route.route("/auth/rooms", RoomRoute);
 route.route("/auth/roles", RoleRoute);
-route.route("/auth/users", UserRoute);
 route.route("/auth/staffs", StaffRoute);
 
 export default route;

@@ -9,5 +9,9 @@ export type Variables = {
 			name: string;
 			code: string;
 		};
+		role: {
+			id: number;
+			name: string;
+		};
 	};
 };

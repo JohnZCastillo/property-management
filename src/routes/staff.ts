@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 
 import db from "../db/connection.js";
-import { jobOrders as mainTable, customers } from "../db/schema.js";
+import { users as mainTable, companies, roles } from "../db/schema.js";
 import withPagination from "../util/pagination.js";
 import { eq, getTableColumns, and } from "drizzle-orm";
-import { jobOrderValidation as schema } from "../validation/schema.js";
+import { staffValidation as schema } from "../validation/schema.js";
 import { sValidator } from "@hono/standard-validator";
 import type { Variables } from "../types/index.js";
 
@@ -16,7 +16,10 @@ route.get("/", async (c) => {
 	const query = db
 		.select(getTableColumns(mainTable))
 		.from(mainTable)
-		.where(eq(mainTable.companyId, payload.company.id));
+		.innerJoin(roles, eq(roles.id, mainTable.roleId))
+		.where(
+			and(eq(mainTable.companyId, payload.company.id), eq(roles.name, "staff")),
+		);
 
 	const [result, pagination] = await withPagination(query, "id");
 
@@ -34,8 +37,13 @@ route.get("/:id", async (c) => {
 	const result = await db
 		.select(getTableColumns(mainTable))
 		.from(mainTable)
+		.innerJoin(roles, eq(roles.id, mainTable.roleId))
 		.where(
-			and(eq(mainTable.companyId, payload.company.id), eq(mainTable.id, id)),
+			and(
+				eq(mainTable.companyId, payload.company.id),
+				eq(roles.name, "staff"),
+				eq(mainTable.id, id),
+			),
 		)
 		.limit(1)
 		.execute();
@@ -46,13 +54,23 @@ route.get("/:id", async (c) => {
 });
 
 route.post("/", sValidator("json", schema), async (c) => {
+	const payload = c.get("jwtPayload");
+
 	const data = c.req.valid("json");
 
-	const payload = c.get("jwtPayload");
+	const [role] = await db
+		.select()
+		.from(roles)
+		.where(eq(roles.name, "staff"))
+		.limit(1);
+
+	if (role == null) {
+		throw new Error("Staff role is missing");
+	}
 
 	const result = await db
 		.insert(mainTable)
-		.values({ ...data, companyId: payload.company.id })
+		.values({ ...data, companyId: payload.company.id, roleId: role.id })
 		.returning();
 
 	return c.json(
@@ -70,11 +88,25 @@ route.patch("/:id", sValidator("json", schema.partial()), async (c) => {
 
 	const data = c.req.valid("json");
 
+	const [role] = await db
+		.select()
+		.from(roles)
+		.where(eq(roles.name, "staff"))
+		.limit(1);
+
+	if (role == null) {
+		throw new Error("Staff role is missing");
+	}
+
 	const result = await db
 		.update(mainTable)
 		.set(data)
 		.where(
-			and(eq(mainTable.id, id), eq(mainTable.companyId, payload.company.id)),
+			and(
+				eq(mainTable.id, id),
+				eq(mainTable.companyId, payload.company.id),
+				eq(mainTable.roleId, role.id),
+			),
 		)
 		.returning();
 
@@ -87,10 +119,24 @@ route.delete("/:id", async (c) => {
 	const id = parseInt(c.req.param("id"));
 	const payload = c.get("jwtPayload");
 
+	const [role] = await db
+		.select()
+		.from(roles)
+		.where(eq(roles.name, "staff"))
+		.limit(1);
+
+	if (role == null) {
+		throw new Error("Staff role is missing");
+	}
+
 	const result = await db
 		.delete(mainTable)
 		.where(
-			and(eq(mainTable.id, id), eq(mainTable.companyId, payload.company.id)),
+			and(
+				eq(mainTable.id, id),
+				eq(mainTable.companyId, payload.company.id),
+				eq(mainTable.roleId, role.id),
+			),
 		)
 		.execute();
 

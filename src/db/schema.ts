@@ -116,6 +116,9 @@ export const bookings = pgTable("bookings", {
 	roomId: integer("room_id")
 		.notNull()
 		.references(() => rooms.id, { onDelete: "restrict" }),
+	companyId: integer("company_id")
+		.notNull()
+		.references(() => companies.id, { onDelete: "cascade" }),
 	timeIn: timestamp("time_in", { withTimezone: true }).notNull(),
 	timeOut: timestamp("time_out", { withTimezone: true }).notNull(),
 	status: bookingStatus("status").default("confirmed"),
@@ -128,12 +131,15 @@ export const jobOrders = pgTable("job_orders", {
 	title: varchar("title", { length: 255 }).notNull(),
 	description: text("description"),
 	status: jobStatus("status").default("pending"),
-	staffId: integer("staff_id")
-		.notNull()
-		.references(() => users.id, { onDelete: "restrict" }),
+	staffId: integer("staff_id").references(() => users.id, {
+		onDelete: "restrict",
+	}),
 	roomId: integer("room_id").references(() => rooms.id, {
 		onDelete: "set null",
 	}),
+	companyId: integer("company_id")
+		.notNull()
+		.references(() => companies.id, { onDelete: "cascade" }),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -33,3 +33,62 @@ export const expenseValidation = z.object({
 export const propertyValidation = z.object({
 	title: z.string().max(255).nonempty("Title is required"),
 });
+
+export const userValidation = z.object({
+	name: z.string().max(255).min(1),
+	email: z.string().email().max(255),
+	password: z.string().max(255).min(8),
+	archived: z.boolean().default(false),
+	roleId: z.number().int().positive(),
+	companyId: z.number().int().positive(),
+});
+
+export const staffValidation = z.object({
+	name: z.string().max(255).min(1),
+	email: z.string().email().max(255),
+	password: z.string().max(255).min(8),
+	archived: z.boolean().default(false),
+});
+
+export const roleValidation = z.object({
+	name: z.string().max(255).min(1),
+});
+
+export const bookingValidation = z.object({
+	customerId: z.number().int().positive(),
+	roomId: z.number().int().positive(),
+	timeIn: z
+		.string()
+		.refine((val) => !isNaN(Date.parse(val)), {
+			message: "Invalid date format",
+		})
+		.transform((val) => new Date(val)),
+	timeOut: z
+		.string()
+		.refine((val) => !isNaN(Date.parse(val)), {
+			message: "Invalid date format",
+		})
+		.transform((val) => new Date(val)),
+	status: z.enum(["confirmed", "checked_in", "checked_out", "cancelled"]),
+});
+
+export const jobOrderValidation = z.object({
+	title: z.string().max(255).min(1),
+	description: z.string().optional(),
+	status: z.enum(["pending", "in_progress", "completed", "cancelled"]),
+	staffId: z.number().int().positive().optional(),
+	roomId: z.number().int().positive().nullable().optional(),
+});
+
+export const authValidation = z.object({
+	email: z.email().max(255).min(1),
+	password: z.string().max(255).min(1),
+});
+
+export const registerValidtion = z.object({
+	name: z.string().min(1).max(255),
+	email: z.string().email().max(255),
+	password: z.string().min(8).max(255),
+	company_name: z.string().min(1).max(255),
+	company_code: z.string().min(1).max(50),
+});

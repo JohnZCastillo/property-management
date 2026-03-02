@@ -1,16 +1,13 @@
 import { Hono } from "hono";
-import { sign } from "hono/jwt";
+import { sign, decode } from "hono/jwt";
 import db from "../db/connection.js";
-import { companies, users } from "../db/schema.js";
+import { companies, roles, users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import "dotenv/config";
+import { sValidator } from "@hono/standard-validator";
+import { authValidation, registerValidtion } from "../validation/schema.js";
 
 const route = new Hono();
-
-route.get("/", (c) => {
-	const id = c.req.param("id");
-	return c.text("Get Book: " + id);
-});
 
 route.get("/:id", async (c) => {
 	const id = parseInt(c.req.param("id"));
@@ -26,32 +23,119 @@ route.get("/:id", async (c) => {
 				id: companies.id,
 				name: companies.name,
 			},
+			role: {
+				id: roles.id,
+				name: roles.name,
+			},
 		})
 		.from(users)
 		.innerJoin(companies, eq(users.companyId, companies.id))
+		.innerJoin(roles, eq(users.roleId, roles.id))
 		.where(eq(users.id, id))
 		.limit(1);
 
 	const token = await sign(query, process.env.JWT_SECRET!);
 
+	const { header, payload } = decode(token);
+
 	return c.json({
 		token: token,
+		data: payload,
 	});
 });
 
-route.post("/", (c) => {
-	const id = c.req.param("id");
-	return c.text("Get Book: " + id);
+route.post("/login", sValidator("json", authValidation), async (c) => {
+	const data = c.req.valid("json");
+
+	const [user] = await db
+		.select({
+			user: {
+				id: users.id,
+				name: users.name,
+				email: users.email,
+			},
+			company: {
+				id: companies.id,
+				name: companies.name,
+			},
+			role: {
+				id: roles.id,
+				name: roles.name,
+			},
+		})
+		.from(users)
+		.innerJoin(companies, eq(users.companyId, companies.id))
+		.innerJoin(roles, eq(users.roleId, roles.id))
+		.where(eq(users.email, data.email))
+		.limit(1);
+
+	const token = await sign(user, process.env.JWT_SECRET!);
+
+	if (user == null) {
+		throw new Error("Invalid email/Password");
+	}
+
+	const { header, payload } = decode(token);
+
+	return c.json({
+		token: token,
+		data: payload,
+	});
 });
 
-route.patch("/:id", (c) => {
-	const id = c.req.param("id");
-	return c.text("Get Book: " + id);
-});
+route.post("/register", sValidator("json", registerValidtion), async (c) => {
+	const data = c.req.valid("json");
 
-route.delete("/:id", (c) => {
-	const id = c.req.param("id");
-	return c.text("Get Book: " + id);
+	const [role] = await db.select().from(roles).where(eq(roles.name, "admin"));
+
+	if (role == null) {
+		throw new Error("Admin role not found");
+	}
+
+	const [company] = await db
+		.insert(companies)
+		.values({
+			name: data.company_name,
+			code: data.company_code,
+		})
+		.returning();
+
+	const [user] = await db
+		.insert(users)
+		.values({
+			name: data.name,
+			email: data.email,
+			password: data.password,
+			roleId: role.id,
+			companyId: company.id,
+		})
+		.returning();
+
+	const token = await sign(
+		{
+			user: {
+				id: user.id,
+				name: user.name,
+				email: user.email,
+			},
+			company: {
+				id: company.id,
+				name: company.name,
+			},
+			role: {
+				id: role.id,
+				name: role.name,
+			},
+		},
+		process.env.JWT_SECRET!,
+	);
+
+	const { header, payload } = decode(token);
+
+	return c.json({
+		token: token,
+		data: payload,
+	});
 });
 
 export default route;

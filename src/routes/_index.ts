@@ -13,15 +13,16 @@ type Variables = {
 };
 
 import AuthRoute from "./auth.js";
-import BookingRoute from "./company.js";
+import BookingRoute from "./booking.js";
 import CompanyRoute from "./company.js";
 import CustomerRoute from "./customer.js";
 import ExpenseRoute from "./expense.js";
 import JobOrderRoute from "./jobOrder.js";
 import PropertyRoute from "./property.js";
-import RoleRoute from "./company.js";
+import RoleRoute from "./role.js";
 import RoomRoute from "./room.js";
-import UserRoute from "./company.js";
+import UserRoute from "./user.js";
+import StaffRoute from "./staff.js";
 
 const route = new Hono<{ Variables: Variables }>();
 
@@ -45,5 +46,6 @@ route.route("/auth/properties", PropertyRoute);
 route.route("/auth/rooms", RoomRoute);
 route.route("/auth/roles", RoleRoute);
 route.route("/auth/users", UserRoute);
+route.route("/auth/staffs", StaffRoute);
 
 export default route;

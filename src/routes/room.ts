@@ -11,12 +11,21 @@ import type { Variables } from "../types/index.js";
 const route = new Hono<{ Variables: Variables }>();
 
 route.get("/", async (c) => {
+
 	const payload = c.get("jwtPayload");
+
+	const {propertyId} = c.req.query();
+
+	const filter = [eq(mainTable.companyId, payload.company.id)];
+
+	if(propertyId != null){
+		filter.push(eq(mainTable.propertyId, parseInt(propertyId)));
+	}
 
 	const query = db
 		.select(getTableColumns(mainTable))
 		.from(mainTable)
-		.where(eq(mainTable.companyId, payload.company.id));
+		.where(and(...filter))
 
 	const [result, pagination] = await withPagination(query, "id");
 
@@ -78,9 +87,7 @@ route.patch("/:id", sValidator("json", schema), async (c) => {
 		)
 		.returning();
 
-	return c.json({
-		data: result,
-	});
+	return c.json({data: result});
 });
 
 route.delete("/:id", async (c) => {

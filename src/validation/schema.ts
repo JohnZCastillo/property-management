@@ -16,6 +16,10 @@ export const customerValidation = z.object({
 
 export const roomValidation = z.object({
 	title: z.string().max(255).nonempty("Name is required"),
+	status: z.enum([ "available",
+	"occupied",
+	"maintenance",
+	"reserved"]),
 	propertyId: z.number().int(),
 });
 

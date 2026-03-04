@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 
 import db from "../db/connection.js";
-import { properties as mainTable, users, companies } from "../db/schema.js";
+import { properties as mainTable, users, companies, rooms } from "../db/schema.js";
 import withPagination from "../util/pagination.js";
-import { eq, getTableColumns, and } from "drizzle-orm";
+import { eq, getTableColumns, and, count } from "drizzle-orm";
 import { propertyValidation as schema } from "../validation/schema.js";
 import { sValidator } from "@hono/standard-validator";
 import type { Variables } from "../types/index.js";
@@ -14,10 +14,12 @@ route.get("/", async (c) => {
 	const payload = c.get("jwtPayload");
 
 	const query = db
-		.select(getTableColumns(mainTable))
+		.select({...getTableColumns(mainTable), totalRooms: count(rooms.id)})
 		.from(mainTable)
+		.leftJoin(rooms, eq(rooms.propertyId, mainTable.id))
 		.innerJoin(companies, eq(companies.id, mainTable.companyId))
-		.where(eq(companies.id, payload.company.id));
+		.where(eq(companies.id, payload.company.id))
+		.groupBy(mainTable.id, companies.id, rooms.id)
 
 	const [result, pagination] = await withPagination(query, "id");
 
@@ -89,8 +91,8 @@ route.delete("/:id", async (c) => {
 
 	const result = await db
 		.delete(mainTable)
-		.where(and(eq(mainTable.id, id), eq(mainTable.id, payload.company.id)))
-		.execute();
+		.where(and(eq(mainTable.id, id), eq(mainTable.companyId, payload.company.id)))
+		.returning();
 
 	return c.json({
 		data: result,

@@ -19,7 +19,7 @@ route.get("/", async (c) => {
 		.leftJoin(rooms, eq(rooms.propertyId, mainTable.id))
 		.innerJoin(companies, eq(companies.id, mainTable.companyId))
 		.where(eq(companies.id, payload.company.id))
-		.groupBy(mainTable.id, companies.id, rooms.id)
+		.groupBy(mainTable.id)
 
 	const [result, pagination] = await withPagination(query, "id");
 

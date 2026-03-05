@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 
 import db from "../db/connection.js";
-import { bookings as mainTable, customers } from "../db/schema.js";
+import { bookings as mainTable, customers, properties, rooms, bookings } from "../db/schema.js";
 import withPagination from "../util/pagination.js";
 import { eq, getTableColumns, and } from "drizzle-orm";
 import { bookingValidation as schema } from "../validation/schema.js";
@@ -14,9 +14,11 @@ route.get("/", async (c) => {
 	const payload = c.get("jwtPayload");
 
 	const query = db
-		.select(getTableColumns(mainTable))
+		.select()
 		.from(mainTable)
 		.innerJoin(customers, eq(customers.id, mainTable.customerId))
+		.leftJoin(rooms, eq(rooms.id, mainTable.roomId))
+		.leftJoin(properties, eq(properties.id, rooms.propertyId))
 		.where(eq(mainTable.companyId, payload.company.id));
 
 	const [result, pagination] = await withPagination(query, "id");

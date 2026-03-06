@@ -14,10 +14,13 @@ import { relations } from "drizzle-orm";
 
 // Enums
 export const bookingStatus = pgEnum("booking_status", [
-	"confirmed",
-	"checked_in",
-	"checked_out",
-	"cancelled",
+	"pending",
+    "confirmed",
+    "cancelled",
+    "for_checkin",
+    "for_checkout",
+    "checked_in",
+    "checkout"
 ]);
 
 export const roomStatus = pgEnum("room_status", [

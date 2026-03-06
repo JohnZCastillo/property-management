@@ -7,11 +7,21 @@ import { eq, getTableColumns, and } from "drizzle-orm";
 import { bookingValidation as schema } from "../validation/schema.js";
 import { sValidator } from "@hono/standard-validator";
 import type { Variables } from "../types/index.js";
+import qs from 'qs';
 
 const route = new Hono<{ Variables: Variables }>();
 
 route.get("/", async (c) => {
+
 	const payload = c.get("jwtPayload");
+
+	const {page = 1, perPage = 10, filter = {}} = qs.parse (c.req.query())
+
+	const whereFilter = [];
+
+	Object.keys(filter).forEach(key => {
+		whereFilter.push(eq(mainTable[key], filter[key]));
+	})
 
 	const query = db
 		.select()
@@ -19,7 +29,12 @@ route.get("/", async (c) => {
 		.innerJoin(customers, eq(customers.id, mainTable.customerId))
 		.leftJoin(rooms, eq(rooms.id, mainTable.roomId))
 		.leftJoin(properties, eq(properties.id, rooms.propertyId))
-		.where(eq(mainTable.companyId, payload.company.id));
+		.where(
+			and(
+				...whereFilter,
+				eq(mainTable.companyId, payload.company.id),
+			)
+	);
 
 	const [result, pagination] = await withPagination(query, "id");
 

@@ -14,6 +14,10 @@ export const customerValidation = z.object({
 	age: z.number().int().min(0, "Age must be positive").optional(),
 });
 
+export const guestValidation = z.object({
+	guests: z.array(customerValidation)
+});
+
 export const roomValidation = z.object({
 	title: z.string().max(255).nonempty("Name is required"),
 	status: z.enum([ "available",
@@ -21,6 +25,7 @@ export const roomValidation = z.object({
 	"maintenance",
 	"reserved"]),
 	propertyId: z.number().int(),
+	amount: z.number().int().min(0, "amount must be greather than zero"),
 });
 
 export const expenseValidation = z.object({
@@ -61,7 +66,6 @@ export const roleValidation = z.object({
 });
 
 export const bookingValidation = z.object({
-	customerId: z.number().int().positive(),
 	roomId: z.number().int().positive(),
 	timeIn: z
 		.string()
@@ -75,7 +79,13 @@ export const bookingValidation = z.object({
 			message: "Invalid date format",
 		})
 		.transform((val) => new Date(val)),
-	status: z.enum(["confirmed", "checked_in", "checked_out", "cancelled"]),
+	status: z.enum([ "pending",
+    "confirmed",
+    "cancelled",
+    "for_checkin",
+    "for_checkout",
+    "checked_in",
+    "checkout"]),
 });
 
 export const jobOrderValidation = z.object({

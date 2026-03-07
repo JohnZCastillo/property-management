@@ -14,6 +14,8 @@ import RoleRoute from "./role.js";
 import RoomRoute from "./room.js";
 import UserRoute from "./user.js";
 import StaffRoute from "./staff.js";
+import GuestRoute from "./guest.js";
+
 import type { Variables } from "../types/index.js";
 import superAdminMiddleware from "../middlewares/superAdminMiddleware.js";
 import adminMiddleware from "../middlewares/adminMiddleware.js";
@@ -46,6 +48,7 @@ route.use("/auth/*", (c, next) => {
 
 //  ---- Routes start here ------ 
 route.route("/public/auth", AuthRoute);
+route.route("/public/bookings", GuestRoute);
 
 route.route("/auth/companies", CompanyRoute);
 route.route("/auth/users", UserRoute);

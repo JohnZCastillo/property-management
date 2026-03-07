@@ -23,6 +23,12 @@ export const bookingStatus = pgEnum("booking_status", [
     "checkout"
 ]);
 
+export const paymentStatus = pgEnum("payment_status", [
+	"pending",
+    "success",
+    "failed",
+]);
+
 export const roomStatus = pgEnum("room_status", [
 	"available",
 	"occupied",
@@ -92,10 +98,12 @@ export const rooms = pgTable("rooms", {
 	companyId: integer("company_id")
 		.notNull()
 		.references(() => companies.id, { onDelete: "cascade" }),
+	
 	title: varchar("title", { length: 255 }).notNull(),
 	status: roomStatus("status").default("available"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+	amount: decimal("amount", { precision: 10, scale: 2 }).default('0.0').notNull(),
 });
 
 export const customers = pgTable("customers", {
@@ -113,18 +121,52 @@ export const customers = pgTable("customers", {
 
 export const bookings = pgTable("bookings", {
 	id: serial("id").primaryKey(),
-	customerId: integer("customer_id")
-		.notNull()
-		.references(() => customers.id, { onDelete: "restrict" }),
 	roomId: integer("room_id")
 		.notNull()
 		.references(() => rooms.id, { onDelete: "restrict" }),
 	companyId: integer("company_id")
 		.notNull()
 		.references(() => companies.id, { onDelete: "cascade" }),
+	amount: decimal("amount", { precision: 10, scale: 2 }).default('0.0').notNull(),
 	timeIn: timestamp("time_in", { withTimezone: true }).notNull(),
 	timeOut: timestamp("time_out", { withTimezone: true }).notNull(),
 	status: bookingStatus("status").default("confirmed"),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const attachment = pgTable("attachments", {
+	id: serial("id").primaryKey(),
+	filename: varchar("name", { length: 255 }).notNull(),
+	path: varchar("name", { length: 255 }).notNull(),
+	attachableId: varchar("name", { length: 255 }).notNull(),
+	attachableType: varchar("name", { length: 255 }).notNull(),
+	companyId: integer("company_id")
+		.notNull()
+		.references(() => companies.id, { onDelete: "restrict" }),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const bookingPayments = pgTable("booking_payments", {
+	id: serial("id").primaryKey(),
+	bookingsId: integer("booking_id")
+		.notNull()
+		.references(() => bookings.id, { onDelete: "cascade" }),
+	status: paymentStatus("status").default("pending"),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const bookingGuest = pgTable("booking_guest", {
+	id: serial("id").primaryKey(),
+	bookingId: integer("booking_id")
+		.notNull()
+		.references(() => bookings.id, { onDelete: "cascade" }),
+	customerId: integer("customer_id")
+		.notNull()
+		.references(() => customers.id, { onDelete: "cascade" }),
+	isPointPerson: boolean("is_point_person").default(false),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

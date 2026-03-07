@@ -1,13 +1,15 @@
 import { Hono } from "hono";
 
 import db from "../db/connection.js";
-import { bookings as mainTable, customers, properties, rooms, bookings } from "../db/schema.js";
+import { bookings as mainTable, customers, properties, rooms, bookingGuest, bookings } from "../db/schema.js";
 import withPagination from "../util/pagination.js";
-import { eq, getTableColumns, and } from "drizzle-orm";
+import { eq, getTableColumns, and, count} from "drizzle-orm";
+
 import { bookingValidation as schema } from "../validation/schema.js";
 import { sValidator } from "@hono/standard-validator";
 import type { Variables } from "../types/index.js";
 import qs from 'qs';
+import { alias } from "drizzle-orm/pg-core";
 
 const route = new Hono<{ Variables: Variables }>();
 
@@ -23,18 +25,36 @@ route.get("/", async (c) => {
 		whereFilter.push(eq(mainTable[key], filter[key]));
 	})
 
+	const guest = alias(bookingGuest, 'guest');
+	const pointPerson = alias(bookingGuest, 'point_person');
+
 	const query = db
-		.select()
+		.select({
+			bookings: getTableColumns(mainTable),
+			properties: getTableColumns(properties),	
+			rooms: getTableColumns(rooms),	
+			pointPerson: getTableColumns(customers),
+			totalGuest: count(guest.id) 
+		})
 		.from(mainTable)
-		.innerJoin(customers, eq(customers.id, mainTable.customerId))
 		.leftJoin(rooms, eq(rooms.id, mainTable.roomId))
 		.leftJoin(properties, eq(properties.id, rooms.propertyId))
+		.leftJoin(guest,
+			and(
+				eq(guest.bookingId, mainTable.id),
+			))
+		.leftJoin(pointPerson,
+			and(
+				eq(pointPerson.bookingId, mainTable.id),
+				eq(pointPerson.isPointPerson, true)
+			))
+		.leftJoin(customers, eq(customers.id, pointPerson.customerId))
 		.where(
 			and(
 				...whereFilter,
 				eq(mainTable.companyId, payload.company.id),
 			)
-	);
+		).groupBy(bookings.id, properties.id, rooms.id, pointPerson.id, customers.id)
 
 	const [result, pagination] = await withPagination(query, "id");
 
@@ -52,7 +72,6 @@ route.get("/:id", async (c) => {
 	const result = await db
 		.select(getTableColumns(mainTable))
 		.from(mainTable)
-		.innerJoin(customers, eq(customers.id, mainTable.customerId))
 		.where(
 			and(eq(mainTable.companyId, payload.company.id), eq(mainTable.id, id)),
 		)
@@ -69,9 +88,13 @@ route.post("/", sValidator("json", schema), async (c) => {
 
 	const payload = c.get("jwtPayload");
 
+	const [{roomFee}] = await db.select({roomFee: rooms.amount}).from(rooms).where(eq(rooms.id, data.roomId)).limit(1);
+
+	const totalPayment = 2 * parseFloat(roomFee);
+
 	const result = await db
 		.insert(mainTable)
-		.values({ ...data, companyId: payload.company.id })
+		.values({ ...data, companyId: payload.company.id, amount: `${totalPayment}` })
 		.returning();
 
 	return c.json(

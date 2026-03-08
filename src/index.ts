@@ -8,6 +8,9 @@ import routes from "./routes/_index.js";
 import { UnauthorizedError } from "./exceptions/Unauthorized.js";
 import { ForbiddenError } from "./exceptions/Forbidden.js";
 import { HTTPException } from 'hono/http-exception';
+import { InvalidBookingError } from "./exceptions/InvalidBookingError.ts";
+
+process.env.TZ = "Asia/Manila";
 
 const app = new Hono();
 
@@ -26,6 +29,10 @@ app.onError((err, c) => {
 
 	if (err instanceof ForbiddenError) {
 		return c.json({ message: err.message, status: 403 }, 403);
+	}
+
+	if (err instanceof InvalidBookingError) {
+		return c.json({ message: err.message, status: 400 }, 400);
 	}
 
 	return c.json({ message: "Something went wrong, please try again" }, 500);

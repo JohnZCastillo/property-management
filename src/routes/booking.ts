@@ -3,13 +3,15 @@ import { Hono } from "hono";
 import db from "../db/connection.js";
 import { bookings as mainTable, customers, properties, rooms, bookingGuest, bookings } from "../db/schema.js";
 import withPagination from "../util/pagination.js";
-import { eq, getTableColumns, and, count} from "drizzle-orm";
+import { eq, getTableColumns, and, count, notInArray, between, gte, lte} from "drizzle-orm";
 
 import { bookingValidation as schema } from "../validation/schema.js";
 import { sValidator } from "@hono/standard-validator";
 import type { Variables } from "../types/index.js";
 import qs from 'qs';
 import { alias } from "drizzle-orm/pg-core";
+import computeStayFee from "../util/computeStayFee.js";
+import { InvalidBookingError } from "../exceptions/InvalidBookingError.ts";
 
 const route = new Hono<{ Variables: Variables }>();
 
@@ -84,13 +86,31 @@ route.get("/:id", async (c) => {
 });
 
 route.post("/", sValidator("json", schema), async (c) => {
+
 	const data = c.req.valid("json");
 
 	const payload = c.get("jwtPayload");
 
+	const isRoomTaken = await db.select()
+		.from(bookings)
+		.leftJoin(rooms, eq(rooms.id, bookings.roomId))
+		.where(and(
+			eq(bookings.companyId, payload.company.id),
+			notInArray(bookings.status, ['cancelled','checkout']),
+			// between(bookings.timeIn, data.timeIn, data.timeOut),
+			// between(bookings.timeOut, data.timeIn, data.timeOut)
+		)).limit(1);
+
+	console.log('is room taken: ', data);
+	console.log('is room taken: ', isRoomTaken,data);
+
+	if(isRoomTaken){
+		throw new InvalidBookingError('Room is not available');
+	}
+
 	const [{roomFee}] = await db.select({roomFee: rooms.amount}).from(rooms).where(eq(rooms.id, data.roomId)).limit(1);
 
-	const totalPayment = 2 * parseFloat(roomFee);
+	const totalPayment = computeStayFee({timeIn: data.timeIn, timeOut: data.timeOut, roomFee: parseFloat(roomFee)})
 
 	const result = await db
 		.insert(mainTable)
@@ -108,7 +128,7 @@ route.post("/", sValidator("json", schema), async (c) => {
 route.patch("/:id", sValidator("json", schema.partial()), async (c) => {
 	const id = parseInt(c.req.param("id"));
 
-	const payload = c.get("jwtPayload");
+	const payload = c.get("jwtPayload");	
 
 	const data = c.req.valid("json");
 

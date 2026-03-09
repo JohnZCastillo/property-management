@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import db from "../db/connection.js";
 import { bookings as mainTable, customers, properties, rooms, bookingGuest, bookings } from "../db/schema.js";
 import withPagination from "../util/pagination.js";
-import { eq, getTableColumns, and, count, notInArray, between, gte, lte} from "drizzle-orm";
+import { eq, getTableColumns, and, count, notInArray, between, gte, lte, or} from "drizzle-orm";
 
 import { bookingValidation as schema } from "../validation/schema.js";
 import { sValidator } from "@hono/standard-validator";
@@ -91,18 +91,17 @@ route.post("/", sValidator("json", schema), async (c) => {
 
 	const payload = c.get("jwtPayload");
 
-	const isRoomTaken = await db.select()
+	const [isRoomTaken] = await db.select()
 		.from(bookings)
 		.leftJoin(rooms, eq(rooms.id, bookings.roomId))
 		.where(and(
 			eq(bookings.companyId, payload.company.id),
 			notInArray(bookings.status, ['cancelled','checkout']),
-			// between(bookings.timeIn, data.timeIn, data.timeOut),
-			// between(bookings.timeOut, data.timeIn, data.timeOut)
+			or(
+				between(bookings.timeIn, data.timeIn, data.timeOut)
+			),
+			between(bookings.timeOut, data.timeIn, data.timeOut)
 		)).limit(1);
-
-	console.log('is room taken: ', data);
-	console.log('is room taken: ', isRoomTaken,data);
 
 	if(isRoomTaken){
 		throw new InvalidBookingError('Room is not available');

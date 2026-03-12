@@ -26,8 +26,6 @@ route.post("/:companyId/:bookingId", sValidator("json", schema), async (c) => {
 	))
 	.having(({ guestCount }) => eq(guestCount, 0));
 
-	console.log(isValid);
-
 	if(isValid.length <= 0){
 		throw new Error('Invalid request');
 	}
@@ -36,7 +34,7 @@ route.post("/:companyId/:bookingId", sValidator("json", schema), async (c) => {
 
 		const customers = await db
 			.insert(customerTable)
-			.values(data.guests.map(guest => ({...guest, companyId: parseInt(companyId)})))
+			.values(data.guests.map((guest,index) => ({...guest, companyId: parseInt(companyId), isPointPerson: !index })))
 			.returning();
 	
 		return await db
